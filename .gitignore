@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+*.local
+
+# MCP client configs (may contain IMAP credentials)
+**/mcp-servers/servers.json

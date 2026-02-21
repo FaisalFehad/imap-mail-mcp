@@ -1,0 +1,60 @@
+{
+  "name": "proton-bridge-mcp",
+  "version": "1.0.0",
+  "description": "Read-only MCP server for Proton Bridge (IMAP). Exposes mail as tools for local LLMs (e.g. Ollama).",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "proton-bridge-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    ".env.example",
+    "scripts/test-mcp.mjs"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "npm run -s build && node --test --test-concurrency=1 tests/**/*.test.mjs",
+    "test:mcp": "node scripts/test-mcp.mjs",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "proton",
+    "bridge",
+    "imap",
+    "email",
+    "ollama",
+    "read-only"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faisal/proton-bridge-mcp.git"
+  },
+  "homepage": "https://github.com/faisal/proton-bridge-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/faisal/proton-bridge-mcp/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^16.3.1",
+    "imapflow": "^1.0.200",
+    "mailparser": "^3.6.6"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

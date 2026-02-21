@@ -1,73 +1,75 @@
 # IMAP Mail MCP
 
-IMAP-focused MCP (Model Context Protocol) server with **read-only behavior by default**. It exposes your mailbox via IMAP (including Proton Bridge and other IMAP providers) so local LLMs can list folders, search mail, fetch messages, inspect mailbox status, retrieve thread context, and view attachment metadata.
+IMAP Mail MCP is an MCP (Model Context Protocol) server that lets LLM clients read email through IMAP tools.
 
-## Features
+It is designed for:
+- local AI workflows (Cursor, ollmcp, other MCP hosts)
+- mailbox exploration/search/summarization
+- extension by developers who want to add mail tools
 
-- **Read-only**: Only IMAP read operations (list, fetch, search, status, thread context, attachment metadata). No SMTP, no write operations.
-- **Ten MCP tools**:
-  - `mail_list_folders` – List mailboxes (INBOX, Sent, etc.)
-  - `mail_list_messages` – List recent messages in a folder (supports sort/cursor/snippet/page output)
-  - `mail_get_message` – Fetch one full message (envelope + body text)
-  - `mail_search` – Basic convenience search by from, to, subject, body, date, unread
-  - `mail_search_advanced` – **Primary search tool** for keyword, sender/receiver, subject/body, exact date, date range, sent date range, read state, message-id
-  - `mail_get_mailbox_status` – Get counters for one mailbox (messages, unseen, recent)
-  - `mail_list_unread` – List unread messages in a mailbox (supports sort/cursor/snippet/page output)
-  - `mail_list_attachments` – List attachment metadata for one message (filename, size, type, etc.)
-  - `mail_query_by_folder` – Convenience free-text query in one folder with selectable fields
-  - `mail_get_thread_context` – Retrieve related messages in thread context by UID with snippets
-- **Configurable**: Env-based config; optional body length limit for LLM context.
-- **Customisable**: TypeScript codebase; add tools or resources as needed.
+Current implementation is read-only (list/search/fetch/status/thread context/attachment metadata).
 
-## Prerequisites
+## What You Get
 
-1. An IMAP account/server (Proton Bridge is fully supported and used in examples).
-2. **Node.js** 18+.
-3. An **MCP client** that supports tools (e.g. Cursor, [Ollamac](https://ollamac.com), or another MCP host).
+- 10 MCP tools for common mail workflows
+- consistent sorting and cursor pagination support
+- guardrails for result size and snippet size
+- deterministic tests plus CI
+- TypeScript codebase that is easy to extend
 
-## Setup
+## Quick Start
+
+### 1. Install
 
 ```bash
 git clone https://github.com/FaisalFehad/imap-mail-mcp.git
 cd imap-mail-mcp
 cp .env.example .env
-# Edit .env with your IMAP credentials (Proton Bridge example below)
 npm install
 npm run build
 ```
 
-### Environment variables
+### 2. Configure `.env`
 
-Copy `.env.example` to `.env` and set:
+Set IMAP credentials in `.env`:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `IMAP_HOST` | IMAP host | `127.0.0.1` |
-| `IMAP_PORT` | IMAP port | `1143` |
-| `IMAP_SECURE` | Use TLS | `false` (typical for local Bridge) |
-| `IMAP_USER` | IMAP username | `you@proton.me` |
-| `IMAP_PASS` | IMAP password | — |
-| `MAIL_MAX_BODY_LENGTH` | Max body chars returned (0 = no limit) | `50000` |
-| `MAIL_MAX_RESULTS` | Global hard cap for list/search results | `200` |
-| `MAIL_SNIPPET_LENGTH` | Max snippet length when `includeSnippet=true` | `400` |
+| Variable | Required | Description | Typical Example |
+|---|---|---|---|
+| `IMAP_HOST` | yes | IMAP host | `127.0.0.1` |
+| `IMAP_PORT` | yes | IMAP port | `1143` |
+| `IMAP_SECURE` | yes | `true` for TLS, `false` for plain | `false` |
+| `IMAP_USER` | yes | IMAP username | `you@proton.me` |
+| `IMAP_PASS` | yes | IMAP password | `...` |
+| `IMAP_TLS_REJECT_UNAUTHORIZED` | no | validate TLS cert chain | `false` for local self-signed |
+| `MAIL_MAX_BODY_LENGTH` | no | max body chars in `mail_get_message` | `50000` |
+| `MAIL_MAX_RESULTS` | no | global cap for list/search limits | `200` |
+| `MAIL_SNIPPET_LENGTH` | no | max snippet chars when enabled | `400` |
 
-Proton Bridge usually runs IMAP on `127.0.0.1:1143` with TLS off for local use.
+Proton Bridge users usually run with `IMAP_HOST=127.0.0.1`, `IMAP_PORT=1143`, `IMAP_SECURE=false`.
 
-## Running the server
-
-The server speaks MCP over **stdio**. Run it as the command for your MCP client:
+### 3. Run
 
 ```bash
 node dist/index.js
-# or
+```
+
+Or via package bin:
+
+```bash
 npx imap-mail-mcp
 ```
 
-Backward-compatible CLI alias (still works): `npx proton-bridge-mcp`
+Compatibility alias still works:
+
+```bash
+npx proton-bridge-mcp
+```
+
+## MCP Client Setup
 
 ### Cursor
 
-Add to your MCP config (e.g. Cursor Settings → MCP):
+Add server config (Settings -> MCP):
 
 ```json
 {
@@ -87,56 +89,65 @@ Add to your MCP config (e.g. Cursor Settings → MCP):
 }
 ```
 
-Use an absolute path and do not commit `IMAP_PASS`.
+### ollmcp
 
-### ollmcp (MCP Client for Ollama)
+1. Create `~/.config/ollmcp/mcp-servers/servers.json`:
 
-[ollmcp](https://github.com/jonigl/mcp-client-for-ollama) is a TUI client that connects Ollama to MCP servers. Use a **JSON config** so ollmcp can run `node dist/index.js` with the right env (the `-s` flag is for single scripts, not Node + args + env).
+```json
+{
+  "mcpServers": {
+    "imap-mail": {
+      "command": "node",
+      "args": ["/absolute/path/to/imap-mail-mcp/dist/index.js"],
+      "env": {
+        "IMAP_HOST": "127.0.0.1",
+        "IMAP_PORT": "1143",
+        "IMAP_SECURE": "false",
+        "IMAP_USER": "your@proton.me",
+        "IMAP_PASS": "your-bridge-password"
+      },
+      "disabled": false
+    }
+  }
+}
+```
 
-1. **Install ollmcp**
-   ```bash
-   pip install --upgrade ollmcp
-   # or: uvx ollmcp
-   ```
+2. Run:
 
-2. **Create a server config** (e.g. `~/.config/ollmcp/mcp-servers/servers.json`):
-   ```json
-   {
-     "mcpServers": {
-       "imap-mail": {
-         "command": "node",
-         "args": ["/absolute/path/to/imap-mail-mcp/dist/index.js"],
-         "env": {
-           "IMAP_HOST": "127.0.0.1",
-           "IMAP_PORT": "1143",
-           "IMAP_SECURE": "false",
-           "IMAP_USER": "your@proton.me",
-           "IMAP_PASS": "your-bridge-password"
-         },
-         "disabled": false
-       }
-     }
-   }
-   ```
-   Replace `/absolute/path/to/imap-mail-mcp` with your repo path and set `IMAP_USER` / `IMAP_PASS`.
+```bash
+ollmcp -j ~/.config/ollmcp/mcp-servers/servers.json
+```
 
-3. **Run ollmcp**
-   ```bash
-   ollmcp -j ~/.config/ollmcp/mcp-servers/servers.json
-   ```
-   Or with a model: `ollmcp -j ~/.config/ollmcp/mcp-servers/servers.json -m qwen2.5:7b`
+If `ollmcp` is not in PATH, use `~/.local/bin/ollmcp`.
 
-4. **In the TUI**: Use **`t`** (tools) to enable the imap-mail tools. Use a tool-capable model (e.g. qwen2.5, llama3.1, llama3.2, mistral). Ask things like *“List my mail folders”* or *“Show the last 5 messages in INBOX”*. Use **`hil`** to toggle human-in-the-loop (approve each tool call). Use **`rs`** (reload-servers) to reload config without exiting.
+## Tool Reference
 
-## Tool Guidance for LLMs
+Use `mail_search_advanced` as the default search entry point.
 
-- Prefer `mail_search_advanced` for most retrieval tasks.
-- Use `mail_search` and `mail_query_by_folder` as convenience wrappers when the prompt is simple.
-- Use `mail_get_thread_context` before summarizing/replying to preserve conversation continuity.
+| Tool | Use For | Notes |
+|---|---|---|
+| `mail_list_folders` | list mailboxes/folders | start here |
+| `mail_list_messages` | list messages in one mailbox | supports `limit`, `sort`, `cursor`, `includeSnippet`, `returnPage` |
+| `mail_get_message` | full message body by UID | returns envelope + body text |
+| `mail_search` | basic filter search | convenience wrapper |
+| `mail_search_advanced` | keyword/sender/receiver/subject/body/date/sent-date/read-state/message-id | primary search tool |
+| `mail_get_mailbox_status` | counters for one mailbox | messages, unseen, recent, UID metadata |
+| `mail_list_unread` | unread messages in a mailbox | same pagination/sort options as list/search |
+| `mail_list_attachments` | attachment metadata by UID | no binary download |
+| `mail_query_by_folder` | free text query by selected fields | convenience wrapper |
+| `mail_get_thread_context` | related messages around a UID | thread continuity for summarization/reply |
 
-## Stable Result Shape
+### Common List/Search Options
 
-Envelope objects in list/search outputs are stable and include:
+Supported by list/search tools:
+
+- `limit`: requested size (clamped by `MAIL_MAX_RESULTS`)
+- `sort`: `asc` or `desc` (default `desc`)
+- `cursor`: opaque cursor for next page
+- `includeSnippet`: include snippet text in envelope results
+- `returnPage`: return `{ items, nextCursor }` instead of only array
+
+Envelope result fields are stable:
 
 ```json
 {
@@ -146,105 +157,116 @@ Envelope objects in list/search outputs are stable and include:
   "to": "comma-separated addresses",
   "date": "ISO-8601 string",
   "messageId": "optional string",
-  "snippet": "optional string when includeSnippet=true"
+  "snippet": "optional string"
 }
 ```
 
-Pagination support (`cursor`, `returnPage=true`) returns:
+## Example Workflows
 
-```json
-{
-  "items": [/* envelope objects */],
-  "nextCursor": "optional opaque cursor"
-}
+### Find unread billing mail in INBOX
+
+1. `mail_search_advanced` with `mailbox=INBOX`, `keyword=bill`, `unseen=true`, `limit=20`
+2. `mail_get_message` on the most relevant UID
+
+### Summarize a conversation before drafting a reply
+
+1. `mail_get_thread_context` with target UID and `limit`
+2. fetch one or two full messages with `mail_get_message`
+3. summarize using context
+
+### Scan a large folder in pages
+
+1. `mail_list_messages` with `returnPage=true`
+2. pass returned `nextCursor` to next call until absent
+
+## Developer Guide (Use This Codebase)
+
+### Project Layout
+
+```text
+src/index.ts   MCP server, tool schemas, handlers
+src/imap.ts    IMAP operations and query behavior
+src/query.ts   sorting/pagination/cursor/snippet helpers
+src/config.ts  environment parsing and defaults
+tests/*.test.mjs deterministic tests
 ```
+
+### Add a New Tool
+
+1. Add schema in `src/index.ts` tool list.
+2. Add handler branch in `src/index.ts` call handler.
+3. Implement IMAP logic in `src/imap.ts`.
+4. Add deterministic tests in `tests/`.
+5. Update this README tool table.
+
+### Keep LLM Behavior Predictable
+
+- keep envelope field names stable
+- prefer additive changes (avoid breaking existing tool args)
+- keep default ordering deterministic
+- keep limits clamped
+- avoid expensive full-mailbox scans where possible
 
 ## Testing
 
-From the project directory, with a `.env` (or `IMAP_*` in the environment):
+Run deterministic tests (no live mailbox required):
 
 ```bash
 npm test
 ```
 
-`npm test` runs deterministic unit/integration tests (no live mailbox required).
-
-Optional live smoke test (requires a reachable IMAP server and valid creds):
+Run live smoke test (requires real IMAP credentials):
 
 ```bash
 node scripts/test-mcp.mjs
 ```
 
-## Customisation
+CI runs:
 
-- **Config**: Edit `src/config.ts` to add env vars or change defaults.
-- **Tools**: Edit `src/index.ts` to add MCP tools or change tool names/descriptions; implement handlers in the `CallToolRequestSchema` handler.
-- **IMAP behaviour**: All read-only IMAP logic lives in `src/imap.ts` (list folders, list messages, get message, search, advanced search, status, thread context, attachments). Adjust limits, parsing, or add new read-only operations there.
-- **Body length**: Set `MAIL_MAX_BODY_LENGTH` to control how much body text is returned to the LLM (avoids huge context).
-
-## Project structure
-
-```
-imap-mail-mcp/
-├── src/
-│   ├── index.ts    # MCP server, tool definitions and handlers
-│   ├── config.ts   # Env-based config
-│   ├── imap.ts     # Read-only IMAP client
-│   └── query.ts    # Pagination/sort/cursor/snippet helpers
-├── tests/
-│   ├── query.test.mjs
-│   └── imap.integration.test.mjs
-├── .env.example
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-## License
-
-MIT.
-
-## Pushing to GitHub
-
-1. Create a new repo on GitHub (do not initialise with a README if you already have one).
-2. Update `package.json`: set `repository.url`, `homepage`, and `bugs.url` to your repo values if you are publishing under a different owner.
-3. Run:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit: IMAP Mail MCP server"
-   git remote add origin https://github.com/FaisalFehad/imap-mail-mcp.git
-   git branch -M main
-   git push -u origin main
-   ```
-4. Ensure `.env` is in `.gitignore` (it is) and never commit credentials.
-
-## Release Checklist
-
-Before pushing a release:
-
-1. Run `npm ci`.
-2. Run `npx tsc --noEmit`.
-3. Run `npm test`.
-4. Run optional live smoke: `node scripts/test-mcp.mjs`.
-5. Verify README examples and tool list are up to date.
-6. Ensure no secrets are present in tracked files (`.env`, server configs, etc).
+- `npm ci`
+- `npx tsc --noEmit`
+- `npm test`
 
 ## Troubleshooting
 
-### SSL error: `wrong version number` / `ssl3_get_record`
+### `Error: Command failed no such user (NO)`
 
-You're connecting with TLS (`IMAP_SECURE=true`) but Proton Bridge's local IMAP uses **plain TCP** (no TLS). Set **`IMAP_SECURE=false`** in your `.env` or MCP server config. Port 1143 is typically plain IMAP for Bridge.
+Usually bad `IMAP_USER`/`IMAP_PASS` or temporary server lockout after failed attempts.
 
-### SSL error: `self-signed certificate` / `DEPTH_ZERO_SELF_SIGNED_CERT`
+Check:
+- `IMAP_USER` is your IMAP login identity, not host/IP
+- `IMAP_PASS` is correct for that IMAP account
+- for Proton Bridge, use the Bridge-generated password
+- wait a few minutes after repeated failed login attempts
 
-Proton Bridge may offer TLS with a self-signed cert (direct TLS or STARTTLS). The server accepts it by default. To enforce certificate validation, set **`IMAP_TLS_REJECT_UNAUTHORIZED=true`** in your env.
+### TLS errors (`wrong version number`, `ssl3_get_record`)
 
-### IMAP error: `too many login attempts` (NO)
+You are likely using TLS against a plain IMAP port.
 
-Proton Bridge temporarily blocks logins after repeated failures. Wait a few minutes and try again. Ensure **`IMAP_USER`** is your Proton email (e.g. `you@proton.me`), not a hostname, and **`IMAP_PASS`** is the Bridge password from the Bridge app.
+Fix:
+- set `IMAP_SECURE=false` for local plain IMAP endpoints (common with Bridge)
+- verify port matches secure/non-secure mode
+
+### Self-signed cert errors
+
+If your IMAP endpoint uses self-signed certs:
+
+- set `IMAP_TLS_REJECT_UNAUTHORIZED=false`
+
+### `ollmcp: command not found`
+
+Install via pip/pipx/uvx, or run with full path:
+
+```bash
+~/.local/bin/ollmcp -j ~/.config/ollmcp/mcp-servers/servers.json
+```
 
 ## Security
 
-- **Credentials**: Keep `IMAP_USER` and `IMAP_PASS` in `.env` or your MCP client env; never commit them.
-- **Read-only**: This server does not send mail or change mailbox state; only list/fetch/search/status/thread-context/attachment metadata are implemented.
+- never commit `.env` or credential files
+- keep IMAP credentials in MCP client env or local `.env`
+- this implementation does not send or modify mail
+
+## License
+
+MIT

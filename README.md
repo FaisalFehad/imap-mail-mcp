@@ -1,6 +1,6 @@
-# Proton Bridge MCP
+# IMAP Mail MCP
 
-**Read-only** MCP (Model Context Protocol) server that exposes your Proton Mail inbox via IMAP (Proton Bridge). Use it with local LLMs (e.g. [Ollama](https://ollama.com)) or any MCP client so the model can list folders, search mail, fetch messages, inspect mailbox status, retrieve thread context, and view attachment metadata—without ever sending or modifying mail.
+IMAP-focused MCP (Model Context Protocol) server with **read-only behavior by default**. It exposes your mailbox via IMAP (including Proton Bridge and other IMAP providers) so local LLMs can list folders, search mail, fetch messages, inspect mailbox status, retrieve thread context, and view attachment metadata.
 
 ## Features
 
@@ -21,17 +21,17 @@
 
 ## Prerequisites
 
-1. **Proton Bridge** running and logged in ([Proton Bridge](https://proton.me/mail/bridge)).
+1. An IMAP account/server (Proton Bridge is fully supported and used in examples).
 2. **Node.js** 18+.
 3. An **MCP client** that supports tools (e.g. Cursor, [Ollamac](https://ollamac.com), or another MCP host).
 
 ## Setup
 
 ```bash
-git clone https://github.com/FaisalFehad/proton-bridge-mcp.git
-cd proton-bridge-mcp
+git clone https://github.com/FaisalFehad/imap-mail-mcp.git
+cd imap-mail-mcp
 cp .env.example .env
-# Edit .env with your Proton Bridge IMAP credentials (see below)
+# Edit .env with your IMAP credentials (Proton Bridge example below)
 npm install
 npm run build
 ```
@@ -42,11 +42,11 @@ Copy `.env.example` to `.env` and set:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `IMAP_HOST` | Bridge IMAP host | `127.0.0.1` |
-| `IMAP_PORT` | Bridge IMAP port | `1143` |
+| `IMAP_HOST` | IMAP host | `127.0.0.1` |
+| `IMAP_PORT` | IMAP port | `1143` |
 | `IMAP_SECURE` | Use TLS | `false` (typical for local Bridge) |
-| `IMAP_USER` | Bridge IMAP user (your Proton address) | `you@proton.me` |
-| `IMAP_PASS` | Bridge IMAP password (from Bridge app) | — |
+| `IMAP_USER` | IMAP username | `you@proton.me` |
+| `IMAP_PASS` | IMAP password | — |
 | `MAIL_MAX_BODY_LENGTH` | Max body chars returned (0 = no limit) | `50000` |
 | `MAIL_MAX_RESULTS` | Global hard cap for list/search results | `200` |
 | `MAIL_SNIPPET_LENGTH` | Max snippet length when `includeSnippet=true` | `400` |
@@ -60,8 +60,10 @@ The server speaks MCP over **stdio**. Run it as the command for your MCP client:
 ```bash
 node dist/index.js
 # or
-npx proton-bridge-mcp
+npx imap-mail-mcp
 ```
+
+Backward-compatible CLI alias (still works): `npx proton-bridge-mcp`
 
 ### Cursor
 
@@ -70,9 +72,9 @@ Add to your MCP config (e.g. Cursor Settings → MCP):
 ```json
 {
   "mcpServers": {
-    "proton-bridge": {
+    "imap-mail": {
       "command": "node",
-      "args": ["/absolute/path/to/proton-bridge-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/imap-mail-mcp/dist/index.js"],
       "env": {
         "IMAP_HOST": "127.0.0.1",
         "IMAP_PORT": "1143",
@@ -101,9 +103,9 @@ Use an absolute path and do not commit `IMAP_PASS`.
    ```json
    {
      "mcpServers": {
-       "proton-bridge": {
+       "imap-mail": {
          "command": "node",
-         "args": ["/absolute/path/to/proton-bridge-mcp/dist/index.js"],
+         "args": ["/absolute/path/to/imap-mail-mcp/dist/index.js"],
          "env": {
            "IMAP_HOST": "127.0.0.1",
            "IMAP_PORT": "1143",
@@ -116,7 +118,7 @@ Use an absolute path and do not commit `IMAP_PASS`.
      }
    }
    ```
-   Replace `/absolute/path/to/proton-bridge-mcp` with your repo path and set `IMAP_USER` / `IMAP_PASS`.
+   Replace `/absolute/path/to/imap-mail-mcp` with your repo path and set `IMAP_USER` / `IMAP_PASS`.
 
 3. **Run ollmcp**
    ```bash
@@ -124,7 +126,7 @@ Use an absolute path and do not commit `IMAP_PASS`.
    ```
    Or with a model: `ollmcp -j ~/.config/ollmcp/mcp-servers/servers.json -m qwen2.5:7b`
 
-4. **In the TUI**: Use **`t`** (tools) to enable the proton-bridge tools. Use a tool-capable model (e.g. qwen2.5, llama3.1, llama3.2, mistral). Ask things like *“List my mail folders”* or *“Show the last 5 messages in INBOX”*. Use **`hil`** to toggle human-in-the-loop (approve each tool call). Use **`rs`** (reload-servers) to reload config without exiting.
+4. **In the TUI**: Use **`t`** (tools) to enable the imap-mail tools. Use a tool-capable model (e.g. qwen2.5, llama3.1, llama3.2, mistral). Ask things like *“List my mail folders”* or *“Show the last 5 messages in INBOX”*. Use **`hil`** to toggle human-in-the-loop (approve each tool call). Use **`rs`** (reload-servers) to reload config without exiting.
 
 ## Tool Guidance for LLMs
 
@@ -159,7 +161,7 @@ Pagination support (`cursor`, `returnPage=true`) returns:
 
 ## Testing
 
-From the project directory, with a `.env` (or `IMAP_*` in the environment) and Proton Bridge running:
+From the project directory, with a `.env` (or `IMAP_*` in the environment):
 
 ```bash
 npm test
@@ -167,7 +169,7 @@ npm test
 
 `npm test` runs deterministic unit/integration tests (no live mailbox required).
 
-Optional live smoke test (requires Proton Bridge + valid creds):
+Optional live smoke test (requires a reachable IMAP server and valid creds):
 
 ```bash
 node scripts/test-mcp.mjs
@@ -183,11 +185,11 @@ node scripts/test-mcp.mjs
 ## Project structure
 
 ```
-proton-bridge-mcp/
+imap-mail-mcp/
 ├── src/
 │   ├── index.ts    # MCP server, tool definitions and handlers
 │   ├── config.ts   # Env-based config
-│   ├── imap.ts     # Read-only IMAP (Proton Bridge) client
+│   ├── imap.ts     # Read-only IMAP client
 │   └── query.ts    # Pagination/sort/cursor/snippet helpers
 ├── tests/
 │   ├── query.test.mjs
@@ -210,8 +212,8 @@ MIT.
    ```bash
    git init
    git add .
-   git commit -m "Initial commit: Proton Bridge read-only MCP server"
-   git remote add origin https://github.com/FaisalFehad/proton-bridge-mcp.git
+   git commit -m "Initial commit: IMAP Mail MCP server"
+   git remote add origin https://github.com/FaisalFehad/imap-mail-mcp.git
    git branch -M main
    git push -u origin main
    ```

@@ -21,7 +21,7 @@ You can expect an initial response within 5 business days.
 
 This project handles email metadata/content locally. Never commit:
 
-- Proton Bridge credentials (`IMAP_USER`, `IMAP_PASS`)
+- IMAP credentials (`IMAP_USER`, `IMAP_PASS`)
 - `.env` files
 - MCP server config files containing secrets
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Test script: runs proton-bridge-mcp and calls mail_list_folders.
+ * Test script: runs imap-mail-mcp and calls mail_list_folders.
  * Usage: node scripts/test-mcp.mjs
  * Loads .env from project root; override with IMAP_* in shell if needed.
  */

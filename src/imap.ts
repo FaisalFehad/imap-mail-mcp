@@ -1,5 +1,5 @@
 /**
- * Read-only IMAP client for Proton Bridge.
+ * Read-only IMAP client (compatible with Proton Bridge and standard IMAP servers).
  * Only list, fetch, and search — no write operations.
  */
 
@@ -113,10 +113,26 @@ export interface ThreadContextResult {
   nextCursor?: string;
 }
 
+export interface ImapListEntry {
+  path?: string;
+  name?: string;
+  status?: { messages?: number; unseen?: number };
+}
+
+export interface ImapStatusResult {
+  path?: string;
+  messages?: number;
+  unseen?: number;
+  recent?: number;
+  uidNext?: number;
+  uidValidity?: bigint;
+  highestModseq?: bigint;
+}
+
 export type ImapClientLike = {
   connect(): Promise<void>;
   logout(): Promise<void>;
-  list(options?: unknown): Promise<Array<Record<string, unknown>>>;
+  list(options?: unknown): Promise<ImapListEntry[]>;
   getMailboxLock(mailbox: string, options?: unknown): Promise<{ release(): void }>;
   search(query: Record<string, unknown>, options?: { uid?: boolean }): Promise<number[] | false>;
   fetch(
@@ -129,7 +145,7 @@ export type ImapClientLike = {
     query: Record<string, unknown>,
     options?: { uid?: boolean }
   ): Promise<FetchMessageObject | false>;
-  status(path: string, query: Record<string, unknown>): Promise<Record<string, unknown>>;
+  status(path: string, query: Record<string, unknown>): Promise<ImapStatusResult>;
   mailbox?: { exists?: number };
 };
 
@@ -144,7 +160,7 @@ function defaultClientFactory(config: ImapConfig): ImapClientLike {
       user: config.user,
       pass: config.pass,
     },
-    // Accept self-signed cert for both direct TLS and STARTTLS (Proton Bridge). Set IMAP_TLS_REJECT_UNAUTHORIZED=true to enforce.
+    // Accept self-signed cert for both direct TLS and STARTTLS (useful for local Bridge setups).
     tls: { rejectUnauthorized: config.tlsRejectUnauthorized },
     logger: false,
   }) as unknown as ImapClientLike;
@@ -352,10 +368,10 @@ export async function listFolders(config: ImapConfig): Promise<MailboxInfo[]> {
         statusQuery: { messages: true, unseen: true },
       });
       return list.map((m) => ({
-        path: String((m as { path?: string }).path ?? ""),
-        name: String((m as { name?: string }).name ?? ""),
-        messages: (m as { status?: { messages?: number } }).status?.messages ?? undefined,
-        unseen: (m as { status?: { unseen?: number } }).status?.unseen ?? undefined,
+        path: String(m.path ?? ""),
+        name: String(m.name ?? ""),
+        messages: m.status?.messages,
+        unseen: m.status?.unseen,
       }));
     } finally {
       await safeLogout(client);
@@ -699,13 +715,13 @@ export async function getMailboxStatus(
         highestModseq: true,
       });
       return {
-        path: String((status as { path?: string }).path ?? mailbox),
-        messages: (status as { messages?: number }).messages ?? 0,
-        unseen: (status as { unseen?: number }).unseen ?? 0,
-        recent: (status as { recent?: number }).recent ?? 0,
-        uidNext: (status as { uidNext?: number }).uidNext ?? undefined,
-        uidValidity: (status as { uidValidity?: bigint }).uidValidity?.toString(),
-        highestModseq: (status as { highestModseq?: bigint }).highestModseq?.toString(),
+        path: String(status.path ?? mailbox),
+        messages: status.messages ?? 0,
+        unseen: status.unseen ?? 0,
+        recent: status.recent ?? 0,
+        uidNext: status.uidNext,
+        uidValidity: status.uidValidity?.toString(),
+        highestModseq: status.highestModseq?.toString(),
       };
     } finally {
       await safeLogout(client);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Proton Bridge MCP Server (read-only).
+ * IMAP Mail MCP Server (read-only by default).
  * Exposes mail via MCP tools for use with Ollama or other MCP clients.
  */
 
@@ -19,7 +19,7 @@ const MAIL_CONFIG = loadMailConfig();
 
 const server = new Server(
   {
-    name: "proton-bridge-mcp",
+    name: "imap-mail-mcp",
     version: "1.0.0",
   },
   {

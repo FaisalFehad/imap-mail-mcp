@@ -1,5 +1,5 @@
 /**
- * Configuration for the MCP server and IMAP (Proton Bridge).
+ * Configuration for the MCP server and IMAP providers (including Proton Bridge).
  * Load from environment; see .env.example.
  */
 
@@ -7,7 +7,7 @@ export interface ImapConfig {
   host: string;
   port: number;
   secure: boolean;
-  /** When true, reject self-signed TLS certs. Set false for Proton Bridge (local self-signed). */
+  /** When true, reject self-signed TLS certs. Keep false for local self-signed setups (e.g. Proton Bridge). */
   tlsRejectUnauthorized: boolean;
   user: string;
   pass: string;
@@ -51,7 +51,7 @@ export function loadImapConfig(): ImapConfig {
     normalizedUser.startsWith("https://")
   ) {
     throw new Error(
-      "Invalid IMAP_USER value. This must be your Proton Bridge username/email " +
+      "Invalid IMAP_USER value. This must be your IMAP username/email " +
         "(e.g. you@proton.me), not IMAP_HOST or an IP/URL."
     );
   }

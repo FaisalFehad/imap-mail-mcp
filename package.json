@@ -1,13 +1,14 @@
 {
-  "name": "proton-bridge-mcp",
+  "name": "imap-mail-mcp",
   "version": "1.0.0",
-  "description": "Read-only MCP server for Proton Bridge (IMAP). Exposes mail as tools for local LLMs (e.g. Ollama).",
+  "description": "IMAP MCP server with read-only defaults. Exposes mail as tools for local LLMs (e.g. Ollama).",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js"
   },
   "bin": {
+    "imap-mail-mcp": "dist/index.js",
     "proton-bridge-mcp": "dist/index.js"
   },
   "files": [
@@ -32,16 +33,17 @@
     "imap",
     "email",
     "ollama",
-    "read-only"
+    "read-only",
+    "mail"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FaisalFehad/proton-bridge-mcp.git"
+    "url": "https://github.com/FaisalFehad/imap-mail-mcp.git"
   },
-  "homepage": "https://github.com/FaisalFehad/proton-bridge-mcp#readme",
+  "homepage": "https://github.com/FaisalFehad/imap-mail-mcp#readme",
   "bugs": {
-    "url": "https://github.com/FaisalFehad/proton-bridge-mcp/issues"
+    "url": "https://github.com/FaisalFehad/imap-mail-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

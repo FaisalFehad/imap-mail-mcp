@@ -12,7 +12,7 @@ npx tsc --noEmit
 npm test
 ```
 
-Optional live smoke test (requires Proton Bridge credentials):
+Optional live smoke test (requires valid IMAP credentials):
 
 ```bash
 node scripts/test-mcp.mjs

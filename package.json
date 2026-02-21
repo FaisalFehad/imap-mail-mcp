@@ -37,11 +37,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/faisal/proton-bridge-mcp.git"
+    "url": "https://github.com/FaisalFehad/proton-bridge-mcp.git"
   },
-  "homepage": "https://github.com/faisal/proton-bridge-mcp#readme",
+  "homepage": "https://github.com/FaisalFehad/proton-bridge-mcp#readme",
   "bugs": {
-    "url": "https://github.com/faisal/proton-bridge-mcp/issues"
+    "url": "https://github.com/FaisalFehad/proton-bridge-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

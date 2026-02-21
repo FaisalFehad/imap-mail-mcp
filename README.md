@@ -28,7 +28,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/faisal/proton-bridge-mcp.git
+git clone https://github.com/FaisalFehad/proton-bridge-mcp.git
 cd proton-bridge-mcp
 cp .env.example .env
 # Edit .env with your Proton Bridge IMAP credentials (see below)
@@ -211,7 +211,7 @@ MIT.
    git init
    git add .
    git commit -m "Initial commit: Proton Bridge read-only MCP server"
-   git remote add origin https://github.com/faisal/proton-bridge-mcp.git
+   git remote add origin https://github.com/FaisalFehad/proton-bridge-mcp.git
    git branch -M main
    git push -u origin main
    ```

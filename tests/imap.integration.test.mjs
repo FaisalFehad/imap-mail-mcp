@@ -221,6 +221,50 @@ test("mail_list_messages fast path avoids mailbox-wide UID search", async () => 
   assert.equal(calls.search[0].query.uid, "1:3");
 });
 
+test("mail_list_messages no-cursor asc path avoids full search and supports snippets", async () => {
+  const sourceFor = (uid) =>
+    Buffer.from(
+      [
+        `Message-ID: <m${uid}@example.com>`,
+        `Subject: Subject ${uid}`,
+        `From: from${uid}@example.com`,
+        `To: to${uid}@example.com`,
+        "Date: Mon, 01 Jan 2024 00:00:00 +0000",
+        "",
+        `Body text for message ${uid}`,
+      ].join("\r\n"),
+      "utf8"
+    );
+
+  const { client, calls } = createMockClient({
+    mailboxExists: 4,
+    searchImpl: () => {
+      throw new Error("search should not be called for no-cursor list path");
+    },
+    fetchImpl: (range, query) =>
+      (async function* () {
+        assert.equal(range, "1:2");
+        assert.equal(Boolean(query.source), true);
+        yield makeEnvelope(1, { source: sourceFor(1) });
+        yield makeEnvelope(2, { source: sourceFor(2) });
+      })(),
+  });
+  __setClientFactoryForTests(() => client);
+
+  const page = await listMessagesPage(
+    IMAP_CONFIG,
+    "INBOX",
+    { limit: 2, sort: "asc", includeSnippet: true, maxResults: 200, snippetLength: 30 }
+  );
+  assert.deepEqual(
+    page.items.map((item) => item.uid),
+    [1, 2]
+  );
+  assert.equal(typeof page.items[0].snippet, "string");
+  assert.ok(page.items[0].snippet.length > 0);
+  assert.equal(calls.search.length, 0);
+});
+
 test("attachment listing prefers bodyStructure metadata path", async () => {
   const { client, calls } = createMockClient({
     fetchOneImpl: (_range, query) => {

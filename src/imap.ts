@@ -389,16 +389,22 @@ export async function listMessagesPage(
       await client.connect();
       const lock = await client.getMailboxLock(mailbox, { readOnly: true });
       try {
-        // Fast path for the common case: newest-first, no cursor/snippet.
-        if (!opts.cursor && opts.sort === "desc" && !opts.includeSnippet) {
+        // Fast path for no-cursor list calls: fetch by sequence range instead of mailbox-wide UID search.
+        if (!opts.cursor) {
           const total = client.mailbox?.exists ?? 0;
           if (!total) return { items: [] };
-          const range = `${Math.max(1, total - opts.limit + 1)}:*`;
+          const range =
+            opts.sort === "desc"
+              ? `${Math.max(1, total - opts.limit + 1)}:*`
+              : `1:${Math.min(total, opts.limit)}`;
+          const fetchQuery = opts.includeSnippet
+            ? ({ envelope: true, uid: true, source: true } as const)
+            : ({ envelope: true, uid: true } as const);
           const envelopes: MessageEnvelope[] = [];
-          for await (const msg of client.fetch(range, { envelope: true, uid: true }, { uid: false })) {
-            envelopes.push(await envelopeWithOptionalSnippet(msg, false, opts.snippetLength));
+          for await (const msg of client.fetch(range, fetchQuery, { uid: false })) {
+            envelopes.push(await envelopeWithOptionalSnippet(msg, opts.includeSnippet, opts.snippetLength));
           }
-          const items = sortEnvelopes(envelopes, "desc");
+          const items = sortEnvelopes(envelopes, opts.sort);
           const nextCursor = total > opts.limit && items.length > 0 ? encodeCursor(items[items.length - 1].uid) : undefined;
           return { items, nextCursor };
         }

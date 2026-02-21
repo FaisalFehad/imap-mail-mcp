@@ -21,7 +21,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
-    "test": "npm run -s build && node --test --test-concurrency=1 tests/**/*.test.mjs",
+    "test": "npm run -s build && node --test --test-concurrency=1 tests/*.test.mjs",
     "test:mcp": "node scripts/test-mcp.mjs",
     "prepare": "npm run build"
   },
